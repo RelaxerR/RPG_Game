@@ -14,9 +14,22 @@ async function loadLeaderboard() {
     list.innerHTML = "<li>1. Arthur - 1500 xp</li><li>2. Merlin - 1200 xp</li>";
 }
 
-function startGame(name) {
-    console.log(`Игра началась для ${name}`);
-    // Инициализация сессии на сервере
+async function startGame(name) {
+    const response = await fetch('/api/game/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(name)
+    });
+
+    const data = await response.json();
+
+    // Выводим данные в лог игры
+    const log = document.getElementById('log-window');
+    log.innerHTML = `<div><strong>${data.message}</strong></div>`;
+    log.innerHTML += `<div>Локация: ${data.quest.title}</div>`;
+    log.innerHTML += `<div><em>${data.quest.description}</em></div>`;
+
+    console.log("Статы игрока:", data.player);
 }
 
 loadLeaderboard();

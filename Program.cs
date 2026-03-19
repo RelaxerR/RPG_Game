@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using RPG_Game.Services;
+
 // Здесь будут твои неймспейсы (Data, Services)
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,8 +13,7 @@ builder.Services.AddControllers();
 //    options.UseSqlite("Data Source=game.db"));
 
 // 3. Регистрируем твои сервисы (бизнес-логику и Qwen)
-// builder.Services.AddScoped<IGameEngine, GameEngine>();
-// builder.Services.AddSingleton<QwenService>();
+builder.Services.AddSingleton<GameSessionService>(); 
 
 var app = builder.Build();
 
