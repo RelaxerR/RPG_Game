@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Echoes of the Tavern | RPG</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="container">
+    <!-- Левая часть: Игровой интерфейс -->
+    <main class="game-area">
+        <header>
+            <h1>ECHOES OF THE TAVERN</h1>
+            <p class="subtitle">Текстовое приключение на базе QWEN AI</p>
+        </header>
+
+        <div id="start-screen" class="screen active">
+            <div class="input-group">
+                <label for="player-name">Введите имя героя:</label>
+                <input type="text" id="player-name" placeholder="Странник..." maxlength="20">
+                <button id="start-btn" class="retro-btn">НАЧАТЬ ПУТЕШЕСТВИЕ</button>
+            </div>
+        </div>
+
+        <div id="game-screen" class="screen">
+            <!-- Сюда будем выводить сообщения от модели и кнопки действий -->
+            <div id="log-window"></div>
+            <div class="bottom-interface">
+                <div id="actions-panel"></div>
+                <div id="player-status-panel">
+                    <div class="stat-item">HP: <span id="stat-hp">100/100</span></div>
+                    <div class="stat-item">LVL: <span id="stat-lvl">1</span></div>
+                    <div class="stat-item">GOLD: <span id="stat-gold">0</span></div>
+                    <div class="stat-item">XP: <span id="stat-xp">0/100</span></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Правая часть: Таблица лидеров -->
+    <aside class="sidebar">
+        <h2>ТОП ГЕРОЕВ</h2>
+        <ul id="leaderboard-list">
+            <!-- Будет заполняться из JS -->
+            <li>Загрузка...</li>
+        </ul>
+    </aside>
+</div>
+<script src="js/game.js"></script>
+</body>
+</html>
