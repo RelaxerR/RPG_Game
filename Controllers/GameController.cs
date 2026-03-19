@@ -26,11 +26,14 @@ public class GameController(GameSessionService sessionService) : ControllerBase
     public IActionResult MakeAction([FromBody] ActionRequest request)
     {
         var result = sessionService.MoveToQuest(request.PlayerName, request.CurrentQuestId, request.TargetQuestId);
+        var player = sessionService.GetPlayer(request.PlayerName); // ← ДОБАВИТЬ
+    
         return Ok(new {
             player = result.Player,
             quest = result.Scene,
             events = result.Events,
-            text = result.Scene.Description
+            text = result.Scene.Description,
+            combatState = player?.ActiveCombat  // ← ДОБАВИТЬ ЭТУ СТРОКУ
         });
     }
     

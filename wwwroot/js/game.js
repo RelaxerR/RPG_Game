@@ -76,6 +76,7 @@ function renderGameState(data) {
     // 3. КНОПКИ
     actions.innerHTML = "";
     const combatState = data.combatState || data.CombatState;
+    console.log("Combat state:", combatState);
 
     if (combatState?.isActive) {
         renderCombatButtons(actions, quest.id, combatState);

@@ -48,8 +48,8 @@ public class GameSessionService
         
         // === ПРОВЕРКА НА НАЧАЛО НОВОГО БОЯ ===
         var nextQuest = QuestRepository.Quests.FirstOrDefault(q => q.Id == nextQuestId)
-            ?? QuestRepository.Quests.First(x => x.Id == 666);
-        
+                        ?? QuestRepository.Quests.First(x => x.Id == 666);
+
         if (nextQuest.HasCombat && player.ActiveCombat == null)
         {
             player.StartCombat(nextQuest);
@@ -58,7 +58,8 @@ public class GameSessionService
                 Message = $"⚔️ БОЙ НАЧАЛСЯ! {nextQuest.EnemyName} (HP: {nextQuest.EnemyMaxHealth})",
                 Type = "Info"
             });
-            // Остаёмся в той же сцене для боя
+    
+            // ← УБРАТЬ отсюда ход врага! Просто возвращаем состояние боя
             return new ActionResultDto { Player = player, Scene = nextQuest, Events = events };
         }
         
