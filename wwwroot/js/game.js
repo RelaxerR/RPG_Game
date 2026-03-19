@@ -1,14 +1,24 @@
+let currentPlayerName = "";
+let loadingTimeout = null;
+const LOADING_DURATION_MS = 30000;
+const CIRCUMFERENCE = 220;
+
+// === СТАРТ ИГРЫ ===
 document.getElementById('start-btn').addEventListener('click', async () => {
     const nameInput = document.getElementById('player-name');
     if (!nameInput.value) return alert("Введите имя!");
     currentPlayerName = nameInput.value;
     document.querySelector('.sidebar').classList.add('hidden');
 
+    showLoadingIndicator();
+
     const response = await fetch('/api/game/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(currentPlayerName)
     });
+
+    hideLoadingIndicator();
 
     if (response.ok) {
         const data = await response.json();
@@ -18,8 +28,56 @@ document.getElementById('start-btn').addEventListener('click', async () => {
     }
 });
 
-let currentPlayerName = "";
+// === ИНДИКАТОР ЗАГРУЗКИ ===
+function showLoadingIndicator() {
+    const indicator = document.getElementById('loading-indicator');
+    const bar = document.getElementById('loading-bar');
+    const loadingText = document.getElementById('loading-text');
+    const actionsPanel = document.getElementById('actions-panel');
 
+    if (!indicator || !bar) return;
+
+    indicator.style.display = 'block';
+    actionsPanel.classList.add('disabled');
+
+    bar.style.strokeDashoffset = CIRCUMFERENCE;
+    bar.classList.remove('stuck');
+    loadingText.innerText = "ЗАГРУЗКА";
+
+    loadingTimeout = setTimeout(() => {
+        bar.style.strokeDashoffset = CIRCUMFERENCE * 0.05;
+        bar.classList.add('stuck');
+        loadingText.innerText = "ОЖИДАНИЕ...";
+    }, LOADING_DURATION_MS);
+}
+
+function hideLoadingIndicator() {
+    const indicator = document.getElementById('loading-indicator');
+    const bar = document.getElementById('loading-bar');
+    const loadingText = document.getElementById('loading-text');
+    const actionsPanel = document.getElementById('actions-panel');
+
+    if (!indicator || !bar) return;
+
+    bar.style.transition = 'stroke-dashoffset 0.3s ease-out';
+    bar.style.strokeDashoffset = 0;
+
+    setTimeout(() => {
+        indicator.style.display = 'none';
+        bar.style.strokeDashoffset = CIRCUMFERENCE;
+        bar.classList.remove('stuck');
+        bar.style.transition = 'stroke-dashoffset 0.3s linear';
+        actionsPanel.classList.remove('disabled');
+        loadingText.innerText = "ЗАГРУЗКА";
+
+        if (loadingTimeout) {
+            clearTimeout(loadingTimeout);
+            loadingTimeout = null;
+        }
+    }, 300);
+}
+
+// === ОТРИСОВКА СОСТОЯНИЯ ИГРЫ ===
 function updatePlayerStats(player) {
     if (!player) return;
     const hp = player.currentHealth ?? player.CurrentHealth;
@@ -27,7 +85,6 @@ function updatePlayerStats(player) {
     const lvl = player.level ?? player.Level;
     const gold = player.gold ?? player.Gold;
     const xp = player.experience ?? player.Experience;
-
     document.getElementById('stat-hp').innerText = `${hp}/${maxHp}`;
     document.getElementById('stat-lvl').innerText = lvl;
     document.getElementById('stat-gold').innerText = gold;
@@ -57,27 +114,34 @@ function renderGameState(data) {
     const quest = data.quest || data.Quest;
     const title = quest.title || quest.Title;
     const desc = data.text || quest.description || quest.Description;
-
     const hasPreviousEntries = log.children.length > 0;
     const separatorHtml = hasPreviousEntries
         ? `<hr class="quest-separator ${hasLevelUp ? 'levelup-separator' : ''}">`
         : "";
 
     const entryHtml = `
-    <div class="quest-entry">
-    ${separatorHtml}
-    ${eventsHtml}
-    <p><strong>${title}</strong></p>
-    <p>${desc}</p>
-    </div>
+        <div class="quest-entry">
+            ${separatorHtml}
+            ${eventsHtml}
+            <p><strong>${title}</strong></p>
+            <div class="typing-container" id="typing-${Date.now()}"></div>
+        </div>
     `;
     log.insertAdjacentHTML('beforeend', entryHtml);
 
-    // 3. КНОПКИ
+    // 3. АНИМАЦИЯ ПЕЧАТАНИЯ ТЕКСТА
+    const typingContainer = log.querySelector('.typing-container:last-of-type');
+    if (typingContainer && desc) {
+        typeWriterEffect(typingContainer, desc, 20);
+    }
+
+    // 4. КНОПКИ
+    const loadingIndicator = document.getElementById('loading-indicator');
     actions.innerHTML = "";
+    actions.appendChild(loadingIndicator);
+
     const combatState = data.combatState || data.CombatState;
     console.log("Combat state:", combatState);
-
     if (combatState?.isActive) {
         renderCombatButtons(actions, quest.id, combatState);
     } else {
@@ -96,6 +160,26 @@ function renderGameState(data) {
     log.scrollTop = log.scrollHeight;
 }
 
+// === ЭФФЕКТ ПЕЧАТНОЙ МАШИНКИ ===
+function typeWriterEffect(element, text, speed = 30) {
+    let i = 0;
+    element.classList.add('typing-text');
+
+    function type() {
+        if (i < text.length) {
+            element.textContent += text.charAt(i);
+            i++;
+            setTimeout(type, speed);
+            const log = document.getElementById('log-window');
+            log.scrollTop = log.scrollHeight;
+        } else {
+            element.classList.remove('typing-text');
+        }
+    }
+    type();
+}
+
+// === КНОПКИ БОЯ ===
 function renderCombatButtons(container, questId, combatState) {
     const attackBtn = document.createElement('button');
     attackBtn.className = 'retro-btn action-btn';
@@ -119,7 +203,10 @@ function renderCombatButtons(container, questId, combatState) {
     container.appendChild(negotiateBtn);
 }
 
+// === ОТПРАВКА ДЕЙСТВИЙ ===
 async function sendCombatAction(currentId, actionType) {
+    showLoadingIndicator();
+
     const response = await fetch('/api/game/combat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -129,6 +216,8 @@ async function sendCombatAction(currentId, actionType) {
             actionType: actionType
         })
     });
+
+    hideLoadingIndicator();
 
     if (response.ok) {
         const data = await response.json();
@@ -142,6 +231,8 @@ async function sendCombatAction(currentId, actionType) {
 }
 
 async function sendAction(currentId, targetId) {
+    showLoadingIndicator();
+
     const response = await fetch('/api/game/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -151,6 +242,8 @@ async function sendAction(currentId, targetId) {
             targetQuestId: targetId
         })
     });
+
+    hideLoadingIndicator();
 
     if (response.ok) {
         const data = await response.json();
