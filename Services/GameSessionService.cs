@@ -49,7 +49,7 @@ public class GameSessionService
             return new ActionResultDto
             {
                 Player = player,
-                Quest = nextQuest,
+                Scene = nextQuest,
                 Events = events
             };
         player.AddExperience(exp);
@@ -67,7 +67,7 @@ public class GameSessionService
 
         return new ActionResultDto { 
             Player = player, 
-            Quest = nextQuest, 
+            Scene = nextQuest, 
             Events = events 
         };
     }

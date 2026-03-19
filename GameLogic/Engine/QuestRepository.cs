@@ -4,9 +4,9 @@ namespace RPG_Game.GameLogic.Engine;
 
 public static class QuestRepository
 {
-    public static List<Quest> Quests =
+    public static List<Scene> Quests =
     [
-        new Quest
+        new Scene
         {
             Id = 0, // Стартовая точка
             Title = "Таверна 'Пьяный Дракон'",
@@ -16,7 +16,7 @@ public static class QuestRepository
             DifficultyLevel = 1
         },
 
-        new Quest
+        new Scene
         {
             Id = 1,
             FromIds = [0],
@@ -26,7 +26,7 @@ public static class QuestRepository
             DifficultyLevel = 1,
         },
 
-        new Quest
+        new Scene
         {
             Id = 2,
             FromIds = [0],
@@ -43,7 +43,7 @@ public static class QuestRepository
             DifficultyLevel = 1
         },
         
-        new Quest
+        new Scene
         {
             Id = 666,
             Title = "Лимбо",

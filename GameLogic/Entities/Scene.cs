@@ -1,6 +1,6 @@
 namespace RPG_Game.GameLogic.Entities;
 
-public class Quest
+public class Scene
 {
     public int Id { get; set; } // ID
     public List<int> FromIds { get; set; } = []; // Откуда можно прийти к этому квесту
