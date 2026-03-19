@@ -6,33 +6,45 @@ public static class QuestRepository
 {
     public static List<Quest> Quests =
     [
-        new()
+        new Quest
         {
-            Id = 1,
-            Title = "Крысы в подвале",
-            Description = "Старая добрая классика. В подвале таверны что-то скребется.",
-            DifficultyLevel = 1,
-            MinExperienceReward = 20,
-            MaxExperienceReward = 40,
-            IsStoryQuest = false,
-            LocationType = "Tavern"
+            Id = 0, // Стартовая точка
+            Title = "Таверна 'Пьяный Дракон'",
+            Description = "Свет свечей дрожит, пахнет элем и жареным мясом. Старый трактирщик косится на вас.",
+            ToIds = new Dictionary<int, string> { { 1, "Спуститься в подвал" }, { 2, "Выйти на тракт" } },
+            IsStoryQuest = true,
+            DifficultyLevel = 1
         },
 
-        new()
+        new Quest
         {
-            Id = 100, // Сюжетный
-            Title = "Таинственный незнакомец",
-            Description = "В углу сидит человек в капюшоне. Он шепчет имя: 'Эльдора'.",
+            Id = 1,
+            FromIds = [0],
+            Title = "Темный подвал",
+            Description = "Здесь пахнет сыростью. Среди бочек слышен писк огромных крыс.",
+            ToIds = new Dictionary<int, string> { { 0, "Вернуться в зал" } }, // Можно вернуться назад
             DifficultyLevel = 1,
-            MinExperienceReward = 50,
-            MaxExperienceReward = 50,
+        },
+
+        new Quest
+        {
+            Id = 2,
+            FromIds = [0],
+            Title = "Лесная дорога",
+            Description = "Путь преграждает поваленное дерево. Похоже на засаду.",
+            ToIds = new Dictionary<int, string> { { 3, "Искать обход" }, { 4, "Идти напролом" } },
             IsStoryQuest = true,
-            LocationType = "Tavern",
-            RequiredKeyword = "Эльдора" // Игрок должен будет это запомнить!
+            DifficultyLevel = 1
+        },
+        
+        new Quest
+        {
+            Id = 666,
+            Title = "Лимбо",
+            Description = "Вы попали в Лимбо. Это могло произойти из-за ошибки игры. Вы можете вернуться на стартовую локацию. Будем рады, если сообщите нам, что вы делали, чтобы попасть сюда. Спасибо за помощь в  развитии игры!",
+            ToIds = new Dictionary<int, string> { { 0, "В таверну!" } },
+            IsStoryQuest = false,
+            DifficultyLevel = 0
         }
     ];
-
-    public static Quest GetRandomSideQuest(int level) 
-        => Quests.Where(q => !q.IsStoryQuest && q.DifficultyLevel <= level)
-            .OrderBy(x => Guid.NewGuid()).First();
 }

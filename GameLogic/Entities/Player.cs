@@ -5,6 +5,7 @@ public class Player
     public string Name { get; set; } = "Странник";
     public int Level { get; set; } = 1;
     public int Experience { get; set; } = 0;
+    public int Gold { get; set; } = 0;
         
     // Характеристики для баланса
     public int MaxHealth { get; set; } = 100;
@@ -31,6 +32,11 @@ public class Player
         {
             LevelUp();
         }
+    }
+    
+    public void AddGold(int amount)
+    {
+        Gold += amount;
     }
 
     private void LevelUp()

@@ -1,3 +1,9 @@
+html, body {
+    height: 100vh;
+    margin: 0;
+    overflow: hidden; /* Запрещаем общий скролл страницы */
+}
+
 body {
     background-color: #0c0c0c;
     color: #33ff33;
@@ -9,38 +15,82 @@ body {
 
 .container {
     display: flex;
-    width: 90%;
-    max-width: 1200px;
-    height: 90vh;
-    margin-top: 5vh;
+    width: 95vw;
+    max-width: 1400px;
+    height: 90vh; /* Ограничиваем высоту */
+    margin: 5vh auto;
     border: 2px solid #33ff33;
+    overflow: hidden; /* Контейнер не должен расти */
 }
 
 .game-area {
     flex: 3;
-    padding: 20px;
-    border-right: 1px solid #33ff33;
     display: flex;
     flex-direction: column;
+    padding: 20px;
+    height: 100%; /* Занимает всю высоту .container */
+    box-sizing: border-box;
+}
+
+#log-window {
+    flex: 1;             /* Забирает всё свободное место */
+    overflow-y: auto;    /* Включаем скролл только здесь */
+    padding-right: 15px;
+    border-bottom: 1px solid #33ff33; /* Отделяем от кнопок */
+    margin-bottom: 10px;
+}
+
+/* Основной экран игры после старта */
+#game-screen {
+    display: none; /* По умолчанию скрыт */
+    flex-direction: column;
+    height: 100%;    /* Занимает всю высоту родителя (game-area) */
+    overflow: hidden; /* Важно: сам экран не скроллится */
+}
+
+#game-screen.active {
+    display: flex;
+}
+
+/* Для Chrome/Safari/Edge */
+#log-window::-webkit-scrollbar {
+    width: 6px;
+}
+#log-window::-webkit-scrollbar-track {
+    background: #000;
+}
+#log-window::-webkit-scrollbar-thumb {
+    background-color: #33ff33;
+    border-radius: 10px;
+}
+
+/* Панель кнопок */
+#actions-panel {
+    display: flex;
+    flex-wrap: wrap;     /* Кнопки переносятся на новую строку */
+    gap: 10px;
+    padding: 10px 0;
+    flex-shrink: 0;      /* Запрещаем кнопкам сжиматься или исчезать */
 }
 
 .sidebar {
     flex: 1;
-    padding: 20px;
-    background: #1a1a1a;
+    height: 100%;
+    overflow-y: auto;
+    border-left: 1px solid #33ff33;
+    background: #0a0a0a;
 }
 
 .screen { display: none; }
 .screen.active { display: block; }
 
-.retro-btn {
-    background: transparent;
-    color: #33ff33;
-    border: 1px solid #33ff33;
-    padding: 10px 20px;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.3s;
+/* Компактные кнопки */
+.retro-btn.action-btn {
+    padding: 8px 15px;   /* Уменьшаем отступы */
+    font-size: 0.9em;
+    max-width: 250px;    /* Ограничиваем ширину одной кнопки */
+    white-space: normal; /* Разрешаем перенос текста внутри кнопки */
+    text-align: left;
 }
 
 .retro-btn:hover {
@@ -54,4 +104,21 @@ input {
     color: #33ff33;
     padding: 10px;
     margin-bottom: 10px;
+}
+
+.system-msg {
+    font-size: 0.9em;
+    margin: 5px 0;
+    font-weight: bold;
+}
+.msg-gold { color: #ffd700; }   /* Золотой */
+.msg-exp { color: #00ccff; }    /* Голубой */
+.msg-levelup { color: #ff00ff; animation: blink 1s infinite; } /* Розовый мигающий */
+
+@keyframes blink {
+    50% { opacity: 0.5; }
+}
+
+.hidden {
+    display: none !important;
 }

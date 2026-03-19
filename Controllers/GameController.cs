@@ -1,31 +1,42 @@
 using Microsoft.AspNetCore.Mvc;
+using RPG_Game.GameLogic.Entities;
 using RPG_Game.Services;
 
 namespace RPG_Game.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class GameController : ControllerBase
+public class GameController(GameSessionService sessionService) : ControllerBase
 {
-    private readonly GameSessionService _sessionService;
-
-    public GameController(GameSessionService sessionService)
-    {
-        _sessionService = sessionService;
-    }
-
     [HttpPost("start")]
     public IActionResult StartGame([FromBody] string playerName)
     {
-        if (string.IsNullOrEmpty(playerName)) return BadRequest("Имя не может быть пустым");
+        var player = sessionService.CreatePlayer(playerName);
+        var firstQuest = sessionService.MoveToQuest(player.Name, 0).Quest;
 
-        var player = _sessionService.CreatePlayer(playerName);
-        var firstQuest = _sessionService.GetNextQuest(player);
-
+        // Возвращаем объект в том же формате, что и ActionResultDto
         return Ok(new {
             player = player,
             quest = firstQuest,
-            message = $"Добро пожаловать, {player.Name}! Ваше приключение начинается..."
+            events = new List<GameEvent>(), // Пустой список, чтобы не было undefined
+            text = firstQuest.Description 
         });
     }
+
+    
+    [HttpPost("action")]
+    public IActionResult MakeAction([FromBody] ActionRequest request)
+    {
+        // ActionRequest содержит PlayerName и TargetQuestId
+        var nextQuest = sessionService.MoveToQuest(request.PlayerName, request.TargetQuestId).Quest;
+        var player = sessionService.GetPlayer(request.PlayerName);
+
+        return Ok(new {
+            player = player,
+            quest = nextQuest,
+            // Позже сюда добавим сгенерированный Qwen текст
+            text = nextQuest.Description 
+        });
+    }
+
 }
