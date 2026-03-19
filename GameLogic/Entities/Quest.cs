@@ -13,8 +13,10 @@ public class Quest
     public int DifficultyLevel { get; set; } // Рекомендуемый уровень игрока
     public int MinExperienceReward { get; set; }
     public int MaxExperienceReward { get; set; }
-    public int MinCoinsReward { get; set; }
-    public int MaxCoinsReward { get; set; }
+    public string ExperienceReason { get; set; } = string.Empty;
+    public int MinGoldReward { get; set; }
+    public int MaxGoldReward { get; set; }
+    public string GoldReason { get; set; } = string.Empty;
         
     public bool IsStoryQuest { get; set; } // Ведет ли к прогрессу сюжета или это "гринд"
 

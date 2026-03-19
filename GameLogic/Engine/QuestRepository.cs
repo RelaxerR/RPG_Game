@@ -34,6 +34,12 @@ public static class QuestRepository
             Description = "Путь преграждает поваленное дерево. Похоже на засаду.",
             ToIds = new Dictionary<int, string> { { 3, "Искать обход" }, { 4, "Идти напролом" } },
             IsStoryQuest = true,
+            MinExperienceReward = 1,
+            MaxExperienceReward = 5,
+            ExperienceReason = "Выход из таверны",
+            MinGoldReward = 5,
+            MaxGoldReward = 10,
+            GoldReason = "Путешествие",
             DifficultyLevel = 1
         },
         

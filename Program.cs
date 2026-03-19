@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using RPG_Game.Services;
 
@@ -6,7 +7,12 @@ using RPG_Game.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Добавляем поддержку контроллеров (для API игры и лидерборда)
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => {
+        // Это превратит "Events" в "events", "Player" в "player" и т.д.
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    });
+
 
 // 2. Настраиваем БД (например, SQLite для простоты прототипа)
 // builder.Services.AddDbContext<ApplicationDbContext>(options => 

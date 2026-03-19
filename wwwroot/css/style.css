@@ -113,12 +113,96 @@ input {
 }
 .msg-gold { color: #ffd700; }   /* Золотой */
 .msg-exp { color: #00ccff; }    /* Голубой */
-.msg-levelup { color: #ff00ff; animation: blink 1s infinite; } /* Розовый мигающий */
+.msg-levelup {
+    color: #ff00ff;
+    border-top: 1px solid #ff00ff;
+    padding-top: 5px;
+    animation: blink 1s 3; /* 3 повторения и остановка */
+    animation-fill-mode: forwards; /* Остаётся видимым после анимации */
+}
 
 @keyframes blink {
-    50% { opacity: 0.5; }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
 }
 
 .hidden {
     display: none !important;
+}
+
+.bottom-interface {
+    display: flex;
+    border-top: 2px solid #33ff33;
+    background: #050505;
+    min-height: 120px;
+    padding: 10px;
+    gap: 15px;
+}
+
+#actions-panel {
+    flex: 3; /* Кнопки шире */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-content: flex-start;
+}
+
+#player-status-panel {
+    flex: 1; /* Панель статов уже */
+    border-left: 1px solid #33ff33;
+    padding-left: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #33ff33;
+}
+
+.stat-item {
+    margin: 3px 0;
+    text-shadow: 0 0 5px #33ff33;
+}
+
+.retro-btn.action-btn {
+    padding: 10px 15px;
+    font-size: 0.85em;
+    height: fit-content; /* Кнопки не растягиваются по вертикали */
+}
+
+#log-window {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    background: rgba(0, 20, 0, 0.2); /* Легкий зеленый оттенок фона */
+    border: 1px solid #33ff33;      /* Рамка, чтобы панель было видно */
+    box-shadow: inset 0 0 10px #003300;
+    margin-bottom: 10px;
+}
+
+/* Стили для текстовых вставок событий */
+.event-inline {
+    font-weight: bold;
+    display: block; /* Каждое событие с новой строки для читаемости */
+    margin: 4px 0;
+}
+
+/* Убираем hr из обычных записей квестов */
+.quest-entry {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+/* Разделитель только после LevelUp */
+.quest-entry.has-levelup {
+    border-bottom: 2px solid #ff00ff;
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+}
+
+/* Обычный разделитель между квестами (без событий) */
+.quest-separator {
+    border: 0;
+    border-top: 1px solid #113311;
+    margin: 15px 0;
 }

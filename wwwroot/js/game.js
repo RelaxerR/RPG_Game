@@ -3,11 +3,7 @@ document.getElementById('start-btn').addEventListener('click', async () => {
     if (!nameInput.value) return alert("Введите имя!");
 
     currentPlayerName = nameInput.value;
-
-    // Скрываем таблицу лидеров при начале игры
     document.querySelector('.sidebar').classList.add('hidden');
-    // Можно также расширить игровое поле на весь экран
-    document.querySelector('.game-area').style.flex = "1";
 
     const response = await fetch('/api/game/start', {
         method: 'POST',
@@ -17,7 +13,7 @@ document.getElementById('start-btn').addEventListener('click', async () => {
 
     if (response.ok) {
         const data = await response.json();
-        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('start-screen').style.display = 'none';
         document.getElementById('game-screen').classList.add('active');
         renderGameState(data);
     }
@@ -47,78 +43,102 @@ async function startGame(name) {
     console.log("Статы игрока:", data.player);
 }
 
-function renderQuest(data) {
-    const log = document.getElementById('log-window');
-    const actions = document.getElementById('actions-panel');
-
-    log.innerHTML += `<div class="quest-node">
-        <h3>${data.quest.title}</h3>
-        <p>${data.text}</p>
-    </div>`;
-
-    actions.innerHTML = ""; // Очищаем старые кнопки
-
-    // Создаем кнопки для каждого доступного перехода
-    for (const [id, label] of Object.entries(data.quest.toIds)) {
-        const btn = document.createElement('button');
-        btn.className = 'retro-btn';
-        btn.innerText = label;
-        btn.onclick = () => sendAction(id); // Функция отправки ID на сервер
-        actions.appendChild(btn);
-    }
-}
-
 // Текущее имя игрока (сохраняем при старте)
 let currentPlayerName = "";
 
+function updatePlayerStats(player) {
+    if (!player) return;
+    // Используем проверку на оба регистра (на всякий случай)
+    const hp = player.currentHealth ?? player.CurrentHealth;
+    const maxHp = player.maxHealth ?? player.MaxHealth;
+    const lvl = player.level ?? player.Level;
+    const gold = player.gold ?? player.Gold;
+    const xp = player.experience ?? player.Experience;
+
+    document.getElementById('stat-hp').innerText = `${hp}/${maxHp}`;
+    document.getElementById('stat-lvl').innerText = lvl;
+    document.getElementById('stat-gold').innerText = gold;
+    document.getElementById('stat-xp').innerText = `${xp}/${lvl * 100}`;
+}
+
 function renderGameState(data) {
+    console.log("Response data:", data);
     const log = document.getElementById('log-window');
     const actions = document.getElementById('actions-panel');
 
-    // 1. Сначала выводим системные уведомления (награды)
-    if (data.events && data.events.length > 0) {
-        data.events.forEach(ev => {
-            const evDiv = document.createElement('div');
-            evDiv.className = `system-msg msg-${ev.type.toLowerCase()}`;
-            evDiv.innerText = `[${ev.message}]`;
-            log.appendChild(evDiv);
-        });
+    updatePlayerStats(data.player ?? data.Player);
+
+    // 1. ФОРМИРУЕМ HTML СОБЫТИЙ
+    let eventsHtml = "";
+    let hasLevelUp = false;
+
+    const eventsList = data.events || data.Events;
+    if (eventsList && eventsList.length > 0) {
+        eventsHtml = eventsList.map(ev => {
+            const msg = ev.message || ev.Message;
+            const type = (ev.type || ev.Type || "info").toLowerCase();
+
+            if (type === "levelup") {
+                hasLevelUp = true;
+            }
+
+            return `<div class="event-inline msg-${type}" style="display:block; margin-bottom:5px;">[ ${msg} ]</div>`;
+        }).join("");
     }
 
-    // 2. Затем основной текст квеста
-    log.innerHTML += `
+    // 2. ВЫВОДИМ В ЛОГ
+    const quest = data.quest || data.Quest;
+    const title = quest.title || quest.Title;
+    const desc = data.text || quest.description || quest.Description;
+
+    // Проверяем, есть ли уже записи в логе (не первый квест)
+    const hasPreviousEntries = log.children.length > 0;
+
+    // Разделитель ТОЛЬКО между квестами (не перед первым)
+    const separatorHtml = hasPreviousEntries
+        ? `<hr class="quest-separator ${hasLevelUp ? 'levelup-separator' : ''}">`
+        : "";
+
+    // Убрали внутренний hr из квеста
+    const entryHtml = `
         <div class="quest-entry">
-            <h3>${data.quest.title}</h3>
-            <p>${data.text || data.quest.description}</p>
+            ${separatorHtml}
+            ${eventsHtml}
+            <p><strong>${title}</strong></p>
+            <p>${desc}</p>
         </div>
     `;
 
-    // Автопрокрутка лога вниз
-    log.scrollTop = log.scrollHeight;
+    log.insertAdjacentHTML('beforeend', entryHtml);
 
-    // 2. Очищаем старые кнопки и создаем новые
+    // Кнопки
     actions.innerHTML = "";
+    const choices = quest.toIds || quest.ToIds;
+    const currentId = quest.id;
 
-    // Проходим по словарю ToIds (ID квеста : Текст на кнопке)
-    for (const [id, label] of Object.entries(data.quest.toIds)) {
-        const btn = document.createElement('button');
-        btn.className = 'retro-btn action-btn';
-        btn.innerText = label;
-        btn.onclick = () => sendAction(parseInt(id));
-        actions.appendChild(btn);
+    if (choices) {
+        for (const [id, label] of Object.entries(choices)) {
+            const btn = document.createElement('button');
+            btn.className = 'retro-btn action-btn';
+            btn.innerText = label;
+            btn.onclick = () => sendAction(parseInt(currentId), parseInt(id));
+            actions.appendChild(btn);
+        }
     }
+
+    log.scrollTop = log.scrollHeight;
 }
 
-async function sendAction(targetId) {
+async function sendAction(currentId, targetId) {
     const response = await fetch('/api/game/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             playerName: currentPlayerName,
+            currentQuestId: currentId,
             targetQuestId: targetId
         })
     });
-
     if (response.ok) {
         const data = await response.json();
         renderGameState(data);

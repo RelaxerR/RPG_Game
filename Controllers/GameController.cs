@@ -12,7 +12,7 @@ public class GameController(GameSessionService sessionService) : ControllerBase
     public IActionResult StartGame([FromBody] string playerName)
     {
         var player = sessionService.CreatePlayer(playerName);
-        var firstQuest = sessionService.MoveToQuest(player.Name, 0).Quest;
+        var firstQuest = sessionService.MoveToQuest(player.Name, 0,0).Quest;
 
         // Возвращаем объект в том же формате, что и ActionResultDto
         return Ok(new {
@@ -28,13 +28,15 @@ public class GameController(GameSessionService sessionService) : ControllerBase
     public IActionResult MakeAction([FromBody] ActionRequest request)
     {
         // ActionRequest содержит PlayerName и TargetQuestId
-        var nextQuest = sessionService.MoveToQuest(request.PlayerName, request.TargetQuestId).Quest;
+        var result = sessionService.MoveToQuest(request.PlayerName, request.CurrentQuestId, request.TargetQuestId);
+        var nextQuest = result.Quest;
+        var events = result.Events;
         var player = sessionService.GetPlayer(request.PlayerName);
 
         return Ok(new {
             player = player,
             quest = nextQuest,
-            // Позже сюда добавим сгенерированный Qwen текст
+            events = events,
             text = nextQuest.Description 
         });
     }

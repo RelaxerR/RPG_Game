@@ -25,7 +25,15 @@
         <div id="game-screen" class="screen">
             <!-- Сюда будем выводить сообщения от модели и кнопки действий -->
             <div id="log-window"></div>
-            <div id="actions-panel"></div>
+            <div class="bottom-interface">
+                <div id="actions-panel"></div>
+                <div id="player-status-panel">
+                    <div class="stat-item">HP: <span id="stat-hp">100/100</span></div>
+                    <div class="stat-item">LVL: <span id="stat-lvl">1</span></div>
+                    <div class="stat-item">GOLD: <span id="stat-gold">0</span></div>
+                    <div class="stat-item">XP: <span id="stat-xp">0/100</span></div>
+                </div>
+            </div>
         </div>
     </main>
 
