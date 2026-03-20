@@ -1,6 +1,4 @@
 let currentPlayerName = "";
-let loadingTimeout = null;
-const LOADING_DURATION_MS = 30000;
 const CIRCUMFERENCE = 220;
 
 // === СТАРТ ИГРЫ ===
@@ -10,15 +8,11 @@ document.getElementById('start-btn').addEventListener('click', async () => {
     currentPlayerName = nameInput.value;
     document.querySelector('.sidebar').classList.add('hidden');
 
-    showLoadingIndicator();
-
     const response = await fetch('/api/game/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(currentPlayerName)
     });
-
-    hideLoadingIndicator();
 
     if (response.ok) {
         const data = await response.json();
@@ -27,55 +21,6 @@ document.getElementById('start-btn').addEventListener('click', async () => {
         renderGameState(data);
     }
 });
-
-// === ИНДИКАТОР ЗАГРУЗКИ ===
-function showLoadingIndicator() {
-    const indicator = document.getElementById('loading-indicator');
-    const bar = document.getElementById('loading-bar');
-    const loadingText = document.getElementById('loading-text');
-    const actionsPanel = document.getElementById('actions-panel');
-
-    if (!indicator || !bar) return;
-
-    indicator.style.display = 'block';
-    actionsPanel.classList.add('disabled');
-
-    bar.style.strokeDashoffset = CIRCUMFERENCE;
-    bar.classList.remove('stuck');
-    loadingText.innerText = "ЗАГРУЗКА";
-
-    loadingTimeout = setTimeout(() => {
-        bar.style.strokeDashoffset = CIRCUMFERENCE * 0.05;
-        bar.classList.add('stuck');
-        loadingText.innerText = "ОЖИДАНИЕ...";
-    }, LOADING_DURATION_MS);
-}
-
-function hideLoadingIndicator() {
-    const indicator = document.getElementById('loading-indicator');
-    const bar = document.getElementById('loading-bar');
-    const loadingText = document.getElementById('loading-text');
-    const actionsPanel = document.getElementById('actions-panel');
-
-    if (!indicator || !bar) return;
-
-    bar.style.transition = 'stroke-dashoffset 0.3s ease-out';
-    bar.style.strokeDashoffset = 0;
-
-    setTimeout(() => {
-        indicator.style.display = 'none';
-        bar.style.strokeDashoffset = CIRCUMFERENCE;
-        bar.classList.remove('stuck');
-        bar.style.transition = 'stroke-dashoffset 0.3s linear';
-        actionsPanel.classList.remove('disabled');
-        loadingText.innerText = "ЗАГРУЗКА";
-
-        if (loadingTimeout) {
-            clearTimeout(loadingTimeout);
-            loadingTimeout = null;
-        }
-    }, 300);
-}
 
 // === ОТРИСОВКА СОСТОЯНИЯ ИГРЫ ===
 function updatePlayerStats(player) {
@@ -136,9 +81,7 @@ function renderGameState(data) {
     }
 
     // 4. КНОПКИ
-    const loadingIndicator = document.getElementById('loading-indicator');
     actions.innerHTML = "";
-    actions.appendChild(loadingIndicator);
 
     const combatState = data.combatState || data.CombatState;
     console.log("Combat state:", combatState);
@@ -205,8 +148,6 @@ function renderCombatButtons(container, questId, combatState) {
 
 // === ОТПРАВКА ДЕЙСТВИЙ ===
 async function sendCombatAction(currentId, actionType) {
-    showLoadingIndicator();
-
     const response = await fetch('/api/game/combat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -216,8 +157,6 @@ async function sendCombatAction(currentId, actionType) {
             actionType: actionType
         })
     });
-
-    hideLoadingIndicator();
 
     if (response.ok) {
         const data = await response.json();
@@ -231,8 +170,6 @@ async function sendCombatAction(currentId, actionType) {
 }
 
 async function sendAction(currentId, targetId) {
-    showLoadingIndicator();
-
     const response = await fetch('/api/game/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -242,9 +179,7 @@ async function sendAction(currentId, targetId) {
             targetQuestId: targetId
         })
     });
-
-    hideLoadingIndicator();
-
+    
     if (response.ok) {
         const data = await response.json();
         renderGameState(data);
