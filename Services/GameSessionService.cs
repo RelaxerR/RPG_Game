@@ -1,3 +1,4 @@
+using RPG_Game.API.Models;
 using RPG_Game.GameLogic.Engine;
 using RPG_Game.GameLogic.Entities;
 
@@ -7,20 +8,21 @@ public class GameSessionService
 {
     private readonly Dictionary<string, Player> _activePlayers = new();
     private readonly Random _rnd = new();
-    
-    public Player CreatePlayer(string name)
+
+    private Player CreatePlayer(string name)
     {
         var player = new Player { Name = name };
         _activePlayers[name] = player;
         return player;
     }
-    
-    public Player? GetPlayer(string name) => _activePlayers.GetValueOrDefault(name);
-    
-    public ActionResultDto MoveToQuest(string playerName, int currentQuestId, int nextQuestId)
+
+    public Player GetOrCreatePlayer(string name)
     {
-        var player = GetPlayer(playerName) ?? throw new Exception("Player not found");
-        
+        return _activePlayers.TryGetValue(name, out var player) ? player : CreatePlayer(name);
+    }
+    
+    public ActionResultDto MoveToQuest(Player player, int currentQuestId, int nextQuestId)
+    {
         // Проверка на смерть
         if (!player.IsAlive)
         {

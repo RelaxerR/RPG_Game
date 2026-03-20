@@ -1,4 +1,4 @@
-namespace RPG_Game.GameLogic.Entities;
+namespace RPG_Game.API.Models;
 
 public class GameEvent
 {
