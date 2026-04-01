@@ -1,36 +1,39 @@
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization; // ← Добавь этот using
 using RPG_Game.Services;
-
-// Здесь будут твои неймспейсы (Data, Services)
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Добавляем поддержку контроллеров (для API игры и лидерборда)
+// === 1. НАСТРОЙКА ЛОГГЕРА ===
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+builder.Logging.SetMinimumLevel(LogLevel.Information);
+
+// 2. Добавляем поддержку контроллеров
 builder.Services.AddControllers()
     .AddJsonOptions(options => {
-        // Это превратит "Events" в "events", "Player" в "player" и т.д.
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-
-// 2. Настраиваем БД (например, SQLite для простоты прототипа)
-// builder.Services.AddDbContext<ApplicationDbContext>(options => 
-//    options.UseSqlite("Data Source=game.db"));
-
-// 3. Регистрируем твои сервисы (бизнес-логику и Qwen)
-builder.Services.AddSingleton<GameSessionService>(); 
+// 3. Регистрируем сервисы
+builder.Services.AddSingleton<GameSessionService>();
 
 var app = builder.Build();
 
-// 4. Включаем обслуживание статических файлов (index.html, js, css)
-app.UseDefaultFiles(); // Ищет index.html в wwwroot по умолчанию
+// 4. Статические файлы
+app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// 5. Маппим эндпоинты контроллеров
+// 5. Маппим эндпоинты
 app.MapControllers();
 
-// Тестовый эндпоинт для проверки статуса сервера
+// Тестовый эндпоинт
 app.MapGet("/api/status", () => new { status = "Server is running", time = DateTime.Now });
+
+// === ЛОГ ЗАПУСКА ===
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("🎮 Echoes of the Tavern запущен на порту {Port}", app.Urls.FirstOrDefault() ?? "default");
 
 app.Run();

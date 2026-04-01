@@ -1,9 +1,8 @@
 html, body {
     height: 100vh;
     margin: 0;
-    overflow: hidden; /* Запрещаем общий скролл страницы */
+    overflow: hidden;
 }
-
 body {
     background-color: #0c0c0c;
     color: #33ff33;
@@ -12,47 +11,39 @@ body {
     display: flex;
     justify-content: center;
 }
-
 .container {
     display: flex;
     width: 95vw;
     max-width: 1400px;
-    height: 90vh; /* Ограничиваем высоту */
+    height: 90vh;
     margin: 5vh auto;
     border: 2px solid #33ff33;
-    overflow: hidden; /* Контейнер не должен расти */
+    overflow: hidden;
 }
-
 .game-area {
     flex: 3;
     display: flex;
     flex-direction: column;
     padding: 20px;
-    height: 100%; /* Занимает всю высоту .container */
+    height: 100%;
     box-sizing: border-box;
 }
-
 #log-window {
-    flex: 1;             /* Забирает всё свободное место */
-    overflow-y: auto;    /* Включаем скролл только здесь */
+    flex: 1;
+    overflow-y: auto;
     padding-right: 15px;
-    border-bottom: 1px solid #33ff33; /* Отделяем от кнопок */
+    border-bottom: 1px solid #33ff33;
     margin-bottom: 10px;
 }
-
-/* Основной экран игры после старта */
 #game-screen {
-    display: none; /* По умолчанию скрыт */
+    display: none;
     flex-direction: column;
-    height: 100%;    /* Занимает всю высоту родителя (game-area) */
-    overflow: hidden; /* Важно: сам экран не скроллится */
+    height: 100%;
+    overflow: hidden;
 }
-
 #game-screen.active {
     display: flex;
 }
-
-/* Для Chrome/Safari/Edge */
 #log-window::-webkit-scrollbar {
     width: 6px;
 }
@@ -63,16 +54,16 @@ body {
     background-color: #33ff33;
     border-radius: 10px;
 }
-
-/* Панель кнопок */
 #actions-panel {
     display: flex;
-    flex-wrap: wrap;     /* Кнопки переносятся на новую строку */
+    flex-wrap: wrap;
     gap: 10px;
     padding: 10px 0;
-    flex-shrink: 0;      /* Запрещаем кнопкам сжиматься или исчезать */
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
 }
-
 .sidebar {
     flex: 1;
     height: 100%;
@@ -80,24 +71,22 @@ body {
     border-left: 1px solid #33ff33;
     background: #0a0a0a;
 }
-
 .screen { display: none; }
 .screen.active { display: block; }
-
-/* Компактные кнопки */
-.retro-btn.action-btn {
-    padding: 8px 15px;   /* Уменьшаем отступы */
+.retro-btn {
+    border: 1px solid #33ff33;
+    background: #000;
+    padding: 8px 15px;
     font-size: 0.9em;
-    max-width: 250px;    /* Ограничиваем ширину одной кнопки */
-    white-space: normal; /* Разрешаем перенос текста внутри кнопки */
+    color: #33ff33;
+    max-width: 250px;
+    white-space: normal;
     text-align: left;
 }
-
 .retro-btn:hover {
     background: #33ff33;
     color: #000;
 }
-
 input {
     background: #000;
     border: 1px solid #33ff33;
@@ -105,31 +94,31 @@ input {
     padding: 10px;
     margin-bottom: 10px;
 }
-
+input:hover {
+    background: #33ff33;
+    color: #000;
+}
 .system-msg {
     font-size: 0.9em;
     margin: 5px 0;
     font-weight: bold;
 }
-.msg-gold { color: #ffd700; }   /* Золотой */
-.msg-exp { color: #00ccff; }    /* Голубой */
+.msg-gold { color: #ffd700; }
+.msg-exp { color: #00ccff; }
 .msg-levelup {
     color: #ff00ff;
     border-top: 1px solid #ff00ff;
     padding-top: 5px;
-    animation: blink 1s 3; /* 3 повторения и остановка */
-    animation-fill-mode: forwards; /* Остаётся видимым после анимации */
+    animation: blink 1s 3;
+    animation-fill-mode: forwards;
 }
-
 @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
 }
-
 .hidden {
     display: none !important;
 }
-
 .bottom-interface {
     display: flex;
     border-top: 2px solid #33ff33;
@@ -138,17 +127,15 @@ input {
     padding: 10px;
     gap: 15px;
 }
-
 #actions-panel {
-    flex: 3; /* Кнопки шире */
+    flex: 3;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     align-content: flex-start;
 }
-
 #player-status-panel {
-    flex: 1; /* Панель статов уже */
+    flex: 1;
     border-left: 1px solid #33ff33;
     padding-left: 15px;
     display: flex;
@@ -158,51 +145,74 @@ input {
     font-size: 1.1em;
     color: #33ff33;
 }
-
 .stat-item {
     margin: 3px 0;
     text-shadow: 0 0 5px #33ff33;
 }
-
-.retro-btn.action-btn {
-    padding: 10px 15px;
-    font-size: 0.85em;
-    height: fit-content; /* Кнопки не растягиваются по вертикали */
-}
-
 #log-window {
     flex: 1;
     overflow-y: auto;
     padding: 15px;
-    background: rgba(0, 20, 0, 0.2); /* Легкий зеленый оттенок фона */
-    border: 1px solid #33ff33;      /* Рамка, чтобы панель было видно */
+    background: rgba(0, 20, 0, 0.2);
+    border: 1px solid #33ff33;
     box-shadow: inset 0 0 10px #003300;
     margin-bottom: 10px;
 }
-
-/* Стили для текстовых вставок событий */
 .event-inline {
     font-weight: bold;
-    display: block; /* Каждое событие с новой строки для читаемости */
+    display: block;
     margin: 4px 0;
 }
-
-/* Убираем hr из обычных записей квестов */
 .quest-entry {
     margin-bottom: 20px;
     padding-bottom: 10px;
 }
-
-/* Разделитель только после LevelUp */
 .quest-entry.has-levelup {
     border-bottom: 2px solid #ff00ff;
     padding-bottom: 15px;
     margin-bottom: 25px;
 }
-
-/* Обычный разделитель между квестами (без событий) */
 .quest-separator {
     border: 0;
     border-top: 1px solid #113311;
     margin: 15px 0;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { filter: drop-shadow(0 0 5px #33ff33); opacity: 1; }
+    50% { filter: drop-shadow(0 0 15px #33ff33); opacity: 0.7; }
+}
+
+#loading-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.7em;
+    color: #33ff33;
+    text-align: center;
+    white-space: nowrap;
+}
+
+#actions-panel.disabled {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#actions-panel.disabled #loading-indicator {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Анимация печатания */
+.typing-text {
+    overflow: hidden;
+    border-right: 2px solid #33ff33;
+    white-space: pre-wrap;
+    animation: blink-caret 0.75s step-end infinite;
+}
+
+@keyframes blink-caret {
+    from, to { border-color: transparent; }
+    50% { border-color: #33ff33; }
 }

@@ -1,18 +1,13 @@
 namespace RPG_Game.GameLogic.Entities;
 
-public class CombatState
+public class CombatState(int sceneId, string name, int maxHealth, bool isActive = true)
 {
-    public bool IsActive { get; set; } = false;
-    public int EnemyCurrentHealth { get; set; }
-    public int EnemyMaxHealth { get; set; }
-    public string EnemyName { get; set; } = string.Empty;
-    public int SceneId { get; set; }
+    public bool IsActive { get; init; } = isActive;
     
-    // История боя для лога
-    public List<string> CombatLog { get; set; } = new();
-    
-    public void AddLog(string message)
-    {
-        CombatLog.Add(message);
-    }
+    public string EnemyName { get; set; } = name;
+    public int EnemyCurrentHealth { get; set; } = maxHealth;
+    public int EnemyMaxHealth { get; set; } = maxHealth;
+
+    public int SceneId { get; set; } = sceneId;
+
 }

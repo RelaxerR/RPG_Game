@@ -1,3 +1,7 @@
+let currentPlayerName = "";
+const CIRCUMFERENCE = 220;
+
+// === СТАРТ ИГРЫ ===
 document.getElementById('start-btn').addEventListener('click', async () => {
     const nameInput = document.getElementById('player-name');
     if (!nameInput.value) return alert("Введите имя!");
@@ -18,8 +22,7 @@ document.getElementById('start-btn').addEventListener('click', async () => {
     }
 });
 
-let currentPlayerName = "";
-
+// === ОТРИСОВКА СОСТОЯНИЯ ИГРЫ ===
 function updatePlayerStats(player) {
     if (!player) return;
     const hp = player.currentHealth ?? player.CurrentHealth;
@@ -27,7 +30,6 @@ function updatePlayerStats(player) {
     const lvl = player.level ?? player.Level;
     const gold = player.gold ?? player.Gold;
     const xp = player.experience ?? player.Experience;
-
     document.getElementById('stat-hp').innerText = `${hp}/${maxHp}`;
     document.getElementById('stat-lvl').innerText = lvl;
     document.getElementById('stat-gold').innerText = gold;
@@ -40,7 +42,11 @@ function renderGameState(data) {
     const actions = document.getElementById('actions-panel');
     updatePlayerStats(data.player ?? data.Player);
 
-    // 1. СОБЫТИЯ
+    // 1. Проверка наличия заголовка сцены
+    const quest = data.quest ?? data.Quest;
+    const title = quest ? quest.title ?? quest.Title : "Неизвестная локация";
+
+    // 2. СОБЫТИЯ
     let eventsHtml = "";
     let hasLevelUp = false;
     const eventsList = data.events || data.Events;
@@ -53,49 +59,113 @@ function renderGameState(data) {
         }).join("");
     }
 
-    // 2. ЛОГ
-    const quest = data.quest || data.Quest;
-    const title = quest.title || quest.Title;
-    const desc = data.text || quest.description || quest.Description;
-
+    // 3. ЛОГ
+    const desc = data.text || quest?.description || quest?.Description || "Нет описания";
     const hasPreviousEntries = log.children.length > 0;
     const separatorHtml = hasPreviousEntries
         ? `<hr class="quest-separator ${hasLevelUp ? 'levelup-separator' : ''}">`
         : "";
 
+    // ← ГЕНЕРИРУЕМ УНИКАЛЬНЫЙ ID ЗАРАНЕЕ
+    const containerId = `typing-${Date.now()}`;
     const entryHtml = `
-    <div class="quest-entry">
-    ${separatorHtml}
-    ${eventsHtml}
-    <p><strong>${title}</strong></p>
-    <p>${desc}</p>
-    </div>
+        <div class="quest-entry">
+            ${separatorHtml}
+            ${eventsHtml}
+            <p><strong>${title}</strong></p>
+            <div class="typing-container" id="${containerId}"></div>
+        </div>
     `;
     log.insertAdjacentHTML('beforeend', entryHtml);
 
-    // 3. КНОПКИ
-    actions.innerHTML = "";
+    // 4. ОСТАНОВИМ СТАРЫЙ ЭФФЕКТ ПЕЧАТАНИЯ
+    const existingTypingContainers = log.querySelectorAll('.typing-text');
+    existingTypingContainers.forEach(container => {
+        container.classList.remove('typing-text');
+    });
+
+    // 5. НОВЫЙ ЭФФЕКТ ПЕЧАТАНИЯ
+    // ← ИСПРАВЛЕНИЕ: используем getElementById вместо querySelector
+    const typingContainer = document.getElementById(containerId);
+
+    // ← Блокируем панель действий пока идёт анимация
+    actions.classList.add('disabled');
+
+    if (typingContainer && desc) {
+        // ← Передаём callback, который выполнится ПОСЛЕ завершения печати
+        typeWriterEffect(typingContainer, desc, 20, () => {
+            // ← Только после завершения текста: рендерим и показываем кнопки
+            renderButtons(actions, data, quest);
+            actions.classList.remove('disabled');
+            log.scrollTop = log.scrollHeight;
+        });
+    } else {
+        renderButtons(actions, data, quest);
+        actions.classList.remove('disabled');
+    }
+
+    log.scrollTop = log.scrollHeight;
+}
+
+// === ЭФФЕКТ ПЕЧАТНОЙ МАШИНКИ (с поддержкой callback) ===
+function typeWriterEffect(element, text, speed = 30, onComplete = null) {
+    let i = 0;
+    element.classList.add('typing-text');
+    element.textContent = ""; // ← Очищаем перед началом
+
+    let interval = setInterval(() => {
+        if (i < text.length) {
+            element.textContent += text.charAt(i);
+            i++;
+        } else {
+            clearInterval(interval);
+            element.classList.remove('typing-text');
+            if (onComplete) onComplete(); // ← Вызываем колбэк по завершении
+            return;
+        }
+        const log = document.getElementById('log-window');
+        log.scrollTop = log.scrollHeight;
+    }, speed);
+}
+
+// === ОТДЕЛЬНЫЙ РЕНДЕР КНОПОК (с каскадной анимацией) ===
+function renderButtons(container, data, quest) {
+    container.innerHTML = ""; // ← Очищаем старые кнопки
+
     const combatState = data.combatState || data.CombatState;
     console.log("Combat state:", combatState);
 
     if (combatState?.isActive) {
-        renderCombatButtons(actions, quest.id, combatState);
+        renderCombatButtons(container, quest?.id, combatState);
     } else {
-        const choices = quest.toIds || quest.ToIds;
-        const currentId = quest.id;
-        if (choices) {
+        const choices = quest?.toIds || quest?.ToIds;
+        const currentId = quest?.id;
+
+        if (choices && Object.keys(choices).length > 0) {
+            let index = 0;
             for (const [id, label] of Object.entries(choices)) {
                 const btn = document.createElement('button');
                 btn.className = 'retro-btn action-btn';
                 btn.innerText = label;
+                // ← Начальное состояние для анимации появления
+                btn.style.opacity = '0';
+                btn.style.transform = 'translateY(5px)';
                 btn.onclick = () => sendAction(parseInt(currentId), parseInt(id));
-                actions.appendChild(btn);
+                container.appendChild(btn);
+
+                // ← Каскадное появление с задержкой
+                setTimeout(() => {
+                    btn.style.transition = 'opacity 0.3s ease-in, transform 0.3s ease-in';
+                    btn.style.opacity = '1';
+                    btn.style.transform = 'translateY(0)';
+                }, index * 100);
+                index++;
             }
         }
     }
-    log.scrollTop = log.scrollHeight;
 }
 
+// === КНОПКИ БОЯ ===
 function renderCombatButtons(container, questId, combatState) {
     const attackBtn = document.createElement('button');
     attackBtn.className = 'retro-btn action-btn';
@@ -119,6 +189,7 @@ function renderCombatButtons(container, questId, combatState) {
     container.appendChild(negotiateBtn);
 }
 
+// === ОТПРАВКА ДЕЙСТВИЙ ===
 async function sendCombatAction(currentId, actionType) {
     const response = await fetch('/api/game/combat', {
         method: 'POST',
@@ -151,7 +222,7 @@ async function sendAction(currentId, targetId) {
             targetQuestId: targetId
         })
     });
-
+    
     if (response.ok) {
         const data = await response.json();
         renderGameState(data);
