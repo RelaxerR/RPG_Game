@@ -32,7 +32,7 @@ public class GameController(GameSessionService sessionService, ILogger<GameContr
         }
         
         var player = sessionService.GetOrCreatePlayer(playerName);
-        var result = sessionService.MoveToQuest(player, 0, 0);
+        var result = sessionService.MoveToQuest(player, 0);
         
         logger.LogInformation("Game started for {PlayerName}, first quest: {QuestId} (OK)", playerName, result.Scene.Id);
         
@@ -45,7 +45,7 @@ public class GameController(GameSessionService sessionService, ILogger<GameContr
         logger.LogInformation("Making action {Action}", request);
         
         var player = sessionService.GetOrCreatePlayer(request.PlayerName);
-        var result = sessionService.MoveToQuest(player, request.CurrentQuestId, request.TargetQuestId);
+        var result = sessionService.MoveToQuest(player, request.TargetQuestId);
         
         if (player is not { IsAlive: true } || !QuestsById.TryGetValue(request.CurrentQuestId, out _))
         {
@@ -71,7 +71,7 @@ public class GameController(GameSessionService sessionService, ILogger<GameContr
         }
 
         // -1 = Атака, -2 = Побег, -3 = Переговоры
-        var result = sessionService.MoveToQuest(player, request.CurrentQuestId, (int) request.ActionType);
+        var result = sessionService.HandleCombatAction(player, request.CurrentQuestId, request.ActionType, []);
         
         logger.LogInformation("Game started for {PlayerName}", request.PlayerName);
         

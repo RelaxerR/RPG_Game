@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization; // ← Добавь этот using
 using RPG_Game.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,19 +8,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
-
-// Уровни логирования (можно вынести в appsettings.json)
 builder.Logging.SetMinimumLevel(LogLevel.Information);
 
 // 2. Добавляем поддержку контроллеров
 builder.Services.AddControllers()
     .AddJsonOptions(options => {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
 // 3. Регистрируем сервисы
 builder.Services.AddSingleton<GameSessionService>();
-// builder.Services.AddSingleton<QwenService>(); // Когда реализуешь
 
 var app = builder.Build();
 

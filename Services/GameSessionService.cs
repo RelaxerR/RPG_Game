@@ -6,11 +6,13 @@ namespace RPG_Game.Services;
 
 public class GameSessionService
 {
-    private readonly Dictionary<string, Player> _activePlayers = new();
+    private readonly Dictionary<string, Player> _activePlayers = [];
+    // ReSharper disable once HeapView.ObjectAllocation.Evident
     private readonly Random _rnd = new();
 
     private Player CreatePlayer(string name)
     {
+        // ReSharper disable once HeapView.ObjectAllocation.Evident
         var player = new Player { Name = name };
         _activePlayers[name] = player;
         return player;
@@ -21,7 +23,7 @@ public class GameSessionService
         return _activePlayers.TryGetValue(name, out var player) ? player : CreatePlayer(name);
     }
     
-    public ActionResultDto MoveToQuest(Player player, int currentQuestId, int nextQuestId)
+    public ActionResultDto MoveToQuest(Player player, int nextQuestId)
     {
         // Проверка на смерть
         if (!player.IsAlive)
@@ -30,23 +32,11 @@ public class GameSessionService
             {
                 Player = player,
                 Scene = QuestRepository.Quests.First(q => q.Id == 0),
-                Events = new List<GameEvent>
-                {
-                    new() { Message = "ВЫ ПОГИБЛИ. Возвращение в таверну...", Type = "Info" }
-                }
+                Events = [new GameEvent("Вы погибли")]
             };
         }
         
-        var currentQuest = QuestRepository.Quests.FirstOrDefault(q => q.Id == currentQuestId)
-            ?? throw new Exception("Current quest not found");
-        
         var events = new List<GameEvent>();
-        
-        // === ЕСЛИ ИДЁТ БОЙ ===
-        if (player.ActiveCombat?.IsActive == true)
-        {
-            return HandleCombatAction(player, currentQuest, nextQuestId, events);
-        }
         
         // === ПРОВЕРКА НА НАЧАЛО НОВОГО БОЯ ===
         var nextQuest = QuestRepository.Quests.FirstOrDefault(q => q.Id == nextQuestId)
@@ -55,11 +45,7 @@ public class GameSessionService
         if (nextQuest.HasCombat && player.ActiveCombat == null)
         {
             player.StartCombat(nextQuest);
-            events.Add(new GameEvent
-            {
-                Message = $"⚔️ БОЙ НАЧАЛСЯ! {nextQuest.EnemyName} (HP: {nextQuest.EnemyMaxHealth})",
-                Type = "Info"
-            });
+            events.Add(new GameEvent("Бой начался"));
     
             // ← УБРАТЬ отсюда ход врага! Просто возвращаем состояние боя
             return new ActionResultDto { Player = player, Scene = nextQuest, Events = events };
@@ -76,88 +62,95 @@ public class GameSessionService
         };
     }
     
-    private ActionResultDto HandleCombatAction(Player player, Scene currentQuest, int actionType, List<GameEvent> events)
+    public ActionResultDto HandleCombatAction(Player player, int currentQuestId, CombatActionType actionType, List<GameEvent> events)
     {
         var combat = player.ActiveCombat!;
-        var scene = currentQuest;
-        
-        // === АТАКА ИГРОКА ===
-        if (actionType == -1)
+        var scene = QuestRepository.Quests.FirstOrDefault(q => q.Id == currentQuestId)
+                           ?? throw new Exception("Current quest not found");
+
+        switch (actionType)
         {
-            var playerDamage = player.RollDamage();
-            var enemyDamage = Math.Max(1, playerDamage - scene.EnemyArmor);
-            combat.EnemyCurrentHealth -= enemyDamage;
-            events.Add(new GameEvent { Message = $"Вы атаковали! -{enemyDamage} HP врагу", Type = "Info" });
-            
-            if (combat.EnemyCurrentHealth <= 0)
+            // === АТАКА ИГРОКА ===
+            case CombatActionType.Attack:
             {
-                player.EndCombat();
-                player.AddExperience(scene.EnemyExperienceReward);
-                player.AddGold(scene.EnemyGoldReward);
-                events.Add(new GameEvent { Message = $"🏆 ПОБЕДА! +{scene.EnemyExperienceReward} XP, +{scene.EnemyGoldReward} Gold", Type = "LevelUp" });
+                var playerDamage = player.RollDamage();
+                var enemyDamage = Math.Max(1, playerDamage - scene.EnemyArmor);
+                combat.EnemyCurrentHealth -= enemyDamage;
+                events.Add(new GameEvent("Вы атаковали"));
+            
+                if (combat.EnemyCurrentHealth <= 0)
+                {
+                    player.EndCombat();
+                    events.Add(new GameEvent("Вы получили опыт!"));
+                    
+                    if (player.AddExperience(scene.EnemyExperienceReward))
+                        events.Add(new GameEvent("У вас новый уровень!"));
+                    
+                    player.AddGold(scene.EnemyGoldReward);
                 
-                var winScene = QuestRepository.Quests.FirstOrDefault(q => q.Id == scene.CombatWinNextSceneId) ?? currentQuest;
-                return new ActionResultDto { Player = player, Scene = winScene, Events = events };
+                    var winScene = QuestRepository.Quests.FirstOrDefault(q => q.Id == scene.CombatWinNextSceneId) ?? scene;
+                    return new ActionResultDto { Player = player, Scene = winScene, Events = events };
+                }
+                break;
             }
-        }
-        // === ПОБЕГ ===
-        else if (actionType == -2)
-        {
-            var fleeDamage = _rnd.Next(5, 15);
-            player.TakeDamage(fleeDamage);
-            events.Add(new GameEvent { Message = $"🏃 ПОБЕГ! -{fleeDamage} HP", Type = "Info" });
-            
-            if (!player.IsAlive)
+            // === ПОБЕГ ===
+            case CombatActionType.Flee:
             {
+                var fleeDamage = _rnd.Next(5, 15);
+                player.TakeDamage(fleeDamage);
+                events.Add(new GameEvent("Вы убегаете"));
+            
+                if (!player.IsAlive)
+                {
+                    player.EndCombat();
+                    events.Add(new GameEvent("Вы погибли"));
+                    var startScene = QuestRepository.Quests.First(q => q.Id == 0);
+                    return new ActionResultDto { Player = player, Scene = startScene, Events = events };
+                }
+            
                 player.EndCombat();
-                events.Add(new GameEvent { Message = "ВЫ ПОГИБЛИ при попытке побега...", Type = "Info" });
-                var startScene = QuestRepository.Quests.First(q => q.Id == 0);
-                return new ActionResultDto { Player = player, Scene = startScene, Events = events };
-            }
+                var partialExp = scene.EnemyExperienceReward / 3;
+                player.AddExperience(partialExp);
+                events.Add(new GameEvent("Вы получили опыт", GameEventType.Exp));
             
-            player.EndCombat();
-            var partialExp = scene.EnemyExperienceReward / 3;
-            player.AddExperience(partialExp);
-            events.Add(new GameEvent { Message = $"Вы сбежали! +{partialExp} XP", Type = "Exp" });
-            
-            var fleeScene = QuestRepository.Quests.FirstOrDefault(q => q.Id == scene.CombatFleeNextSceneId) ?? currentQuest;
-            return new ActionResultDto { Player = player, Scene = fleeScene, Events = events };
-        }
-        // === ПЕРЕГОВОРЫ ===
-        else if (actionType == -3)
-        {
-            var successRoll = _rnd.Next(0, 100);
-            if (successRoll < scene.NegotiationSuccessChance)
-            {
-                player.EndCombat();
-                events.Add(new GameEvent { Message = $"✅ {scene.NegotiationSuccessText}", Type = "Gold" });
-                var peaceScene = QuestRepository.Quests.FirstOrDefault(q => q.Id == scene.CombatWinNextSceneId) ?? currentQuest;
-                return new ActionResultDto { Player = player, Scene = peaceScene, Events = events };
+                var fleeScene = QuestRepository.Quests.FirstOrDefault(q => q.Id == scene.CombatFleeNextSceneId) ?? scene;
+                return new ActionResultDto { Player = player, Scene = fleeScene, Events = events };
             }
-            else
+            // === ПЕРЕГОВОРЫ ===
+            case CombatActionType.Negotiate:
             {
-                events.Add(new GameEvent { Message = $"❌ {scene.NegotiationFailText}", Type = "Info" });
+                var successRoll = _rnd.Next(0, 100);
+                if (successRoll < scene.NegotiationSuccessChance)
+                {
+                    player.EndCombat();
+                    events.Add(new GameEvent("Вы получили золото за то что смогли договориться", GameEventType.Gold));
+                    var peaceScene = QuestRepository.Quests.FirstOrDefault(q => q.Id == scene.CombatWinNextSceneId) ?? scene;
+                    return new ActionResultDto { Player = player, Scene = peaceScene, Events = events };
+                }
+                events.Add(new GameEvent("Вам не удалось договориться"));
+                break;
             }
+            default:
+                throw new ArgumentOutOfRangeException(nameof(actionType), actionType, null);
         }
         
         // === ХОД ВРАГА ===
-        if (player.ActiveCombat?.IsActive == true && player.IsAlive)
+        if (player.ActiveCombat?.IsActive != true || !player.IsAlive)
+            return new ActionResultDto { Player = player, Scene = scene, Events = events };
         {
             var enemyDamage = scene.EnemyDamage;
             var playerFinalDamage = Math.Max(1, enemyDamage - player.Armor);
             player.TakeDamage(playerFinalDamage);
-            events.Add(new GameEvent { Message = $"⚔️ Враг атакует! -{playerFinalDamage} HP", Type = "Info" });
+            events.Add(new GameEvent("Враг атакует"));
+
+            if (player.IsAlive)
+                return new ActionResultDto { Player = player, Scene = scene, Events = events };
             
-            if (!player.IsAlive)
-            {
-                player.EndCombat();
-                events.Add(new GameEvent { Message = "💀 ВЫ ПОГИБЛИ в бою...", Type = "Info" });
-                var startScene = QuestRepository.Quests.First(q => q.Id == 0);
-                return new ActionResultDto { Player = player, Scene = startScene, Events = events };
-            }
+            player.EndCombat();
+            events.Add(new GameEvent("Вы погибли"));
+            var startScene = QuestRepository.Quests.First(q => q.Id == 0);
+            return new ActionResultDto { Player = player, Scene = startScene, Events = events };
         }
-        
-        return new ActionResultDto { Player = player, Scene = currentQuest, Events = events };
     }
     
     private void ApplyRewards(Player player, Scene quest, List<GameEvent> events)
@@ -166,20 +159,20 @@ public class GameSessionService
         if (gold > 0)
         {
             player.Gold += gold;
-            events.Add(new GameEvent { Message = $"+{gold} золотых ({quest.GoldReason})", Type = "Gold" });
+            events.Add(new GameEvent("Вы получили золото", GameEventType.Gold));
         }
         
         var oldLevel = player.Level;
         var exp = _rnd.Next(quest.MinExperienceReward, quest.MaxExperienceReward + 1);
-        if (exp > 0)
-        {
-            player.AddExperience(exp);
-            events.Add(new GameEvent { Message = $"+{exp} XP ({quest.ExperienceReason})", Type = "Exp" });
+        if (exp <= 0)
+            return;
+        
+        player.AddExperience(exp);
+        events.Add(new GameEvent("Вы получили опыт", GameEventType.Exp));
             
-            if (player.Level > oldLevel)
-            {
-                events.Add(new GameEvent { Message = $"УРОВЕНЬ ПОВЫШЕН! Теперь вы {player.Level} уровня.", Type = "LevelUp" });
-            }
+        if (player.Level > oldLevel)
+        {
+            events.Add(new GameEvent("У вас новый уровень!", GameEventType.LevelUp));
         }
     }
 }

@@ -22,14 +22,9 @@ public class Player
     
     public void StartCombat(Scene scene)
     {
-        ActiveCombat = new CombatState
-        {
-            IsActive = true,
-            EnemyName = scene.EnemyName ?? "Враг",
-            EnemyMaxHealth = scene.EnemyMaxHealth,
-            EnemyCurrentHealth = scene.EnemyMaxHealth,
-            SceneId = scene.Id
-        };
+        // TODO: Вынести в настройки имя врага по умолчанию
+        // ReSharper disable once HeapView.ObjectAllocation.Evident
+        ActiveCombat = new CombatState(scene.Id, scene.EnemyName ?? "Враг", scene.EnemyMaxHealth);
     }
     
     public void EndCombat()
@@ -40,13 +35,14 @@ public class Player
     // --- Математика прогрессии ---
     public int ExperienceToNextLevel => Level * 100;
     
-    public void AddExperience(int amount)
+    public bool AddExperience(int amount)
     {
         Experience += amount;
-        if (Experience >= ExperienceToNextLevel)
-        {
-            LevelUp();
-        }
+        if (Experience < ExperienceToNextLevel)
+            return false;
+        
+        LevelUp();
+        return true;
     }
     
     public void AddGold(int amount)

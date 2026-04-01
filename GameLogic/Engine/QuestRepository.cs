@@ -1,10 +1,11 @@
 using RPG_Game.GameLogic.Entities;
+// ReSharper disable HeapView.ObjectAllocation.Evident
 
 namespace RPG_Game.GameLogic.Engine;
 
 public static class QuestRepository
 {
-    public static List<Scene> Quests =
+    public static readonly List<Scene> Quests =
     [
         new()
         {
@@ -48,7 +49,7 @@ public static class QuestRepository
             // === ПАРАМЕТРЫ БОЯ ===
             HasCombat = true,
             EnemyName = "Лесной разбойник",
-            EnemyMaxHealth = 50,
+            EnemyMaxHealth = 10,
             EnemyDamage = 8,
             EnemyArmor = 2,
             EnemyExperienceReward = 25,

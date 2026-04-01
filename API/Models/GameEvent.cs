@@ -1,7 +1,6 @@
 namespace RPG_Game.API.Models;
 
-public class GameEvent
+public readonly record struct GameEvent(string message, GameEventType gameEventType = GameEventType.Info)
 {
-    public string Message { get; set; } = string.Empty;
-    public string Type { get; set; } = "Info"; // Exp, Gold, LevelUp, Info
+    public override string ToString() => $"{{ message = {message}, gameEventType = {gameEventType} }}";
 }

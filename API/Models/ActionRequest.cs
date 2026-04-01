@@ -1,9 +1,9 @@
 namespace RPG_Game.API.Models;
 
 // Этот класс описывает структуру JSON, который придет с фронтенда
-public class ActionRequest
+public class ActionRequest(string playerName, int currentQuestId, int targetQuestId)
 {
-    public string PlayerName { get; set; } = string.Empty;
-    public int CurrentQuestId { get; set; }
-    public int TargetQuestId { get; set; }
+    public string PlayerName { get; } = playerName;
+    public int CurrentQuestId { get; } = currentQuestId;
+    public int TargetQuestId { get; } = targetQuestId;
 }
