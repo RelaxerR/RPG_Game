@@ -11,7 +11,7 @@ public class Player
     public int MaxHealth { get; set; } = 100;
     public int CurrentHealth { get; set; } = 100;
     public int Armor { get; set; } = 0;
-    public int BaseDamage { get; set; } = 10;
+    public int BaseDamage { get; set; } = 5;
     
     // Инвентарь
     public List<string> Inventory { get; set; } = new();
@@ -24,7 +24,7 @@ public class Player
     {
         // TODO: Вынести в настройки имя врага по умолчанию
         // ReSharper disable once HeapView.ObjectAllocation.Evident
-        ActiveCombat = new CombatState(scene.Id, scene.EnemyName ?? "Враг", scene.EnemyMaxHealth);
+        ActiveCombat = new CombatState(scene.Id, scene.Combat.EnemyName ?? "Враг", scene.Combat.EnemyMaxHealth);
     }
     
     public void EndCombat()
@@ -62,7 +62,11 @@ public class Player
     public int RollDamage()
     {
         var rnd = new Random();
-        return rnd.Next(BaseDamage, BaseDamage + (Level * 2));
+        return rnd.Next(BaseDamage, GetMaxDamage());
+    }
+    public int GetMaxDamage()
+    {
+        return BaseDamage * Level + Level;
     }
     
     public void TakeDamage(int rawDamage)

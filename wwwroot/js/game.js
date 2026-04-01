@@ -167,6 +167,7 @@ function renderButtons(container, data, quest) {
 
 // === КНОПКИ БОЯ ===
 function renderCombatButtons(container, questId, combatState) {
+    console.log("Combat state:", combatState);
     const attackBtn = document.createElement('button');
     attackBtn.className = 'retro-btn action-btn';
     attackBtn.innerText = `⚔️ АТАКОВАТЬ (Враг HP: ${combatState.enemyCurrentHealth}/${combatState.enemyMaxHealth})`;
@@ -181,9 +182,12 @@ function renderCombatButtons(container, questId, combatState) {
     fleeBtn.onclick = () => sendCombatAction(questId, -2);
     container.appendChild(fleeBtn);
 
+    // === ОБНОВЛЁННАЯ КНОПКА ПЕРЕГОВОРОВ ===
     const negotiateBtn = document.createElement('button');
     negotiateBtn.className = 'retro-btn action-btn';
-    negotiateBtn.innerText = '💬 ДОГОВОРИТЬСЯ (40% шанс)';
+    const negotiateChance = combatState.negotiationChance ?? "???";
+    console.log("negotiate:", negotiateChance);
+    negotiateBtn.innerText = `💬 ДОГОВОРИТЬСЯ (${negotiateChance}% шанс)`;
     negotiateBtn.style.borderColor = '#33aaff';
     negotiateBtn.onclick = () => sendCombatAction(questId, -3);
     container.appendChild(negotiateBtn);

@@ -60,10 +60,11 @@ public class GameSessionService(ILogger<GameSessionService> logger)
             logger.LogInformation("Player {PlayerName} entering combat on quest {QuestId}", 
                 player.Name, nextQuest.Id);
             player.StartCombat(nextQuest);
-            events.Add(new GameEvent("Бой начался"));
+            player.ActiveCombat.NegotiationChance = nextQuest.Combat.NegotiationSuccessChance;
+            events.Add(new GameEvent($"Бой начался (Враг: {nextQuest.Combat.EnemyName})"));
     
-            logger.LogDebug("Combat state initialized: EnemyHP={EnemyHP}, EnemyDamage={EnemyDamage}", 
-                player.ActiveCombat?.EnemyCurrentHealth, nextQuest.EnemyDamage);
+            logger.LogDebug("Combat state initialized: EnemyHP={EnemyHP}, EnemyDamage={EnemyDamageMin}-{EnemyDamageMin}", 
+                player.ActiveCombat?.EnemyCurrentHealth, nextQuest.Combat.EnemyDamageMin, nextQuest.Combat.EnemyDamageMax);
             
             return new ActionResultDto { Player = player, Scene = nextQuest, Events = events };
         }
@@ -98,13 +99,14 @@ public class GameSessionService(ILogger<GameSessionService> logger)
             case CombatActionType.Attack:
             {
                 var playerDamage = player.RollDamage();
-                var damage = Math.Max(1, playerDamage - scene.EnemyArmor);
+                var damage = Math.Max(1, playerDamage - scene.Combat.EnemyArmor);
                 combat.EnemyCurrentHealth -= damage;
                 
                 logger.LogTrace("Attack calculation: RawDamage={Raw}, AfterArmor={After}, EnemyHP={HP}", 
                     playerDamage, damage, combat.EnemyCurrentHealth);
                 
-                events.Add(new GameEvent("Вы атаковали"));
+                events.Add(new GameEvent($"Вы атаковали \"{scene.Combat.EnemyName}\""));
+                events.Add(new GameEvent(scene.Combat.GetDamage2EnemyReason(damage, player.GetMaxDamage())));
             
                 if (combat.EnemyCurrentHealth <= 0)
                 {
@@ -112,20 +114,20 @@ public class GameSessionService(ILogger<GameSessionService> logger)
                         player.Name, currentQuestId);
                     
                     player.EndCombat();
-                    events.Add(new GameEvent("Вы получили опыт!"));
+                    events.Add(new GameEvent($"Вы получили опыт за победу над \"{scene.Combat.EnemyName}\"!"));
                     
-                    if (player.AddExperience(scene.EnemyExperienceReward))
+                    if (player.AddExperience(scene.Combat.EnemyExperienceReward))
                     {
-                        events.Add(new GameEvent("У вас новый уровень!"));
+                        events.Add(new GameEvent($"У вас новый уровень ({player.Level})!"));
                         logger.LogInformation("Player {PlayerName} leveled up to {NewLevel}", 
                             player.Name, player.Level);
                     }
                     
-                    player.AddGold(scene.EnemyGoldReward);
+                    player.AddGold(scene.Combat.EnemyGoldReward);
                     logger.LogDebug("Rewards granted: Gold={Gold}, XP={XP}", 
-                        scene.EnemyGoldReward, scene.EnemyExperienceReward);
+                        scene.Combat.EnemyGoldReward, scene.Combat.EnemyExperienceReward);
                 
-                    var winScene = QuestRepository.Quests.FirstOrDefault(q => q.Id == scene.CombatWinNextSceneId) ?? scene;
+                    var winScene = QuestRepository.Quests.FirstOrDefault(q => q.Id == scene.Combat.CombatWinNextSceneId) ?? scene;
                     return new ActionResultDto { Player = player, Scene = winScene, Events = events };
                 }
                 break;
@@ -150,27 +152,32 @@ public class GameSessionService(ILogger<GameSessionService> logger)
                 }
             
                 player.EndCombat();
-                var partialExp = scene.EnemyExperienceReward / 3;
+                var partialExp = scene.Combat.EnemyExperienceReward / 3;
                 player.AddExperience(partialExp);
                 events.Add(new GameEvent("Вы получили опыт", GameEventType.Exp));
                 logger.LogDebug("Flee success: Partial XP granted={XP}", partialExp);
             
-                var fleeScene = QuestRepository.Quests.FirstOrDefault(q => q.Id == scene.CombatFleeNextSceneId) ?? scene;
+                var fleeScene = QuestRepository.Quests.FirstOrDefault(q => q.Id == scene.Combat.CombatFleeNextSceneId) ?? scene;
                 return new ActionResultDto { Player = player, Scene = fleeScene, Events = events };
             }
             // === ПЕРЕГОВОРЫ ===
             case CombatActionType.Negotiate:
             {
                 var successRoll = _rnd.Next(0, 100);
-                logger.LogTrace("Negotiation roll: {Roll} vs Chance={Chance}", 
-                    successRoll, scene.NegotiationSuccessChance);
+                var chance = scene.Combat.NegotiationSuccessChance - scene.NegotiateTrys * 10;
+                if (chance < 1) chance = 1;
+                combat.NegotiationChance = chance;
                 
-                if (successRoll < scene.NegotiationSuccessChance)
+                scene.NegotiateTrys++;
+                logger.LogTrace("Negotiation roll: {Roll} vs Chance={Chance}", 
+                    successRoll, chance);
+                
+                if (successRoll < chance)
                 {
                     logger.LogInformation("Player {PlayerName} succeeded in negotiation", player.Name);
                     player.EndCombat();
                     events.Add(new GameEvent("Вы получили золото за то что смогли договориться", GameEventType.Gold));
-                    var peaceScene = QuestRepository.Quests.FirstOrDefault(q => q.Id == scene.CombatWinNextSceneId) ?? scene;
+                    var peaceScene = QuestRepository.Quests.FirstOrDefault(q => q.Id == scene.Combat.CombatWinNextSceneId) ?? scene;
                     return new ActionResultDto { Player = player, Scene = peaceScene, Events = events };
                 }
                 logger.LogDebug("Negotiation failed for player {PlayerName}", player.Name);
@@ -190,7 +197,7 @@ public class GameSessionService(ILogger<GameSessionService> logger)
             return new ActionResultDto { Player = player, Scene = scene, Events = events };
         }
         
-        var enemyDamage = scene.EnemyDamage;
+        var enemyDamage = scene.Combat.RollEnemyDamage();
         var playerFinalDamage = Math.Max(1, enemyDamage - player.Armor);
         player.TakeDamage(playerFinalDamage);
         
@@ -198,6 +205,7 @@ public class GameSessionService(ILogger<GameSessionService> logger)
             enemyDamage, playerFinalDamage, player.CurrentHealth);
         
         events.Add(new GameEvent("Враг атакует"));
+        events.Add(new GameEvent(scene.Combat.GetDamage2PlayerReason(enemyDamage, scene.Combat.EnemyDamageMax)));
 
         if (player.IsAlive)
         {
@@ -215,16 +223,16 @@ public class GameSessionService(ILogger<GameSessionService> logger)
     
     private void ApplyRewards(Player player, Scene quest, List<GameEvent> events)
     {
-        var gold = _rnd.Next(quest.MinGoldReward, quest.MaxGoldReward + 1);
+        var gold = quest.GoldReward.GetReward();
         if (gold > 0)
         {
             player.Gold += gold;
             events.Add(new GameEvent("Вы получили золото", GameEventType.Gold));
-            logger.LogTrace("Gold reward: {Gold} (range: {Min}-{Max})", gold, quest.MinGoldReward, quest.MaxGoldReward);
+            logger.LogTrace("Gold reward: {Gold}", gold);
         }
         
         var oldLevel = player.Level;
-        var exp = _rnd.Next(quest.MinExperienceReward, quest.MaxExperienceReward + 1);
+        var exp = quest.ExpReward.GetReward();
         if (exp <= 0)
         {
             logger.LogTrace("No experience reward for quest {QuestId}", quest.Id);
@@ -233,7 +241,7 @@ public class GameSessionService(ILogger<GameSessionService> logger)
         
         player.AddExperience(exp);
         events.Add(new GameEvent("Вы получили опыт", GameEventType.Exp));
-        logger.LogTrace("Experience reward: {Exp} (range: {Min}-{Max})", exp, quest.MinExperienceReward, quest.MaxExperienceReward);
+        logger.LogTrace("Experience reward: {Exp}", exp);
 
         if (player.Level <= oldLevel)
             return;

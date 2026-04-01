@@ -9,5 +9,5 @@ public class CombatState(int sceneId, string name, int maxHealth, bool isActive 
     public int EnemyMaxHealth { get; set; } = maxHealth;
 
     public int SceneId { get; set; } = sceneId;
-
+    public int NegotiationChance { get; set; } = 0;
 }
